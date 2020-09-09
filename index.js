@@ -26,19 +26,17 @@ const evresp = (gevent) => {
 
         case "issues":
             return `
-❗️❗️❗️❗️❗️❗️
-        
-Issue ${prstate}
+🗣🗣🗣Issueにコメントが付きました🗣🗣🗣
 
-Issue Title and Number  : ${ititle} | #${inum}
+Issue : ${ititle} | #${inum}
 
-Commented or Created By : \`${iactor}\`
+コメント内容: \`${process.env.INPUT_IU_COM}\`
 
-Issue Body : *${ibody}*
-
-[Link to Issue](https://github.com/${repo}/issues/${inum})
-[Link to Repo ](https://github.com/${repo}/)
-[Build log here](https://github.com/${repo}/commit/${sha}/checks)`
+\`${iactor}\` がコメントしました
+[Issueを開く](https://github.com/${repo}/issues/${inum})
+[Repositoryを開く](https://github.com/${repo}/)
+[Build logを開く](https://github.com/${repo}/commit/${sha}/checks)
+            `
         case "issue_comment":
             return `
 🗣🗣🗣Issueにコメントが付きました🗣🗣🗣
