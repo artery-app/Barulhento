@@ -1,25 +1,25 @@
 require("dotenv").config
 const Bot=require('node-telegram-bot-api');
 const {
-    INPUT_STATUS: ipstatus,
-    INPUT_TOKEN: tgtoken,
-    INPUT_CHAT: chatid,
-    INPUT_IU_TITLE: ititle,
-    INPUT_IU_NUM: inum,
-    INPUT_IU_ACTOR: iactor,
-    INPUT_IU_BODY: ibody,
-    INPUT_PR_NUM: pnum,
-    INPUT_PR_STATE: prstate,
-    INPUT_PR_TITLE: ptitle,
-    INPUT_PR_BODY: pbody,
-    GITHUB_EVENT_NAME: ghevent,
-    GITHUB_REPOSITORY: repo,
-    GITHUB_ACTOR: ghactor,
-    GITHUB_SHA: sha,
-    GITHUB_WORKFLOW: ghwrkflw
+    INPUT_STATUS: ipStatus, 
+    INPUT_TOKEN: tgToken, // Telegram API Token
+    INPUT_CHAT: chatid,// Telegram Chat ID
+    INPUT_IU_TITLE: issueTitle, // Issueタイトル
+    INPUT_IU_NUM: issueNum,// Issueの番号
+    INPUT_IU_ACTOR: issueActor, // Issueが誰に作られたか
+    INPUT_IU_BODY: issueBody, // Issue本文
+    INPUT_PR_NUM: prNum, // PRの番号
+    INPUT_PR_STATE: prState, // PRのオープン/再オープン/クローズ状態
+    INPUT_PR_TITLE: prTitle, // PRタイトル
+    INPUT_PR_BODY: prBody, // PR本文
+    GITHUB_EVENT_NAME: ghEvent, // トリガーイベントの名前
+    GITHUB_REPOSITORY: repo, // トリガーイベントが作成されたリポジトリ
+    GITHUB_ACTOR: ghActor, // 誰がこのアクションをトリガーしたか
+    GITHUB_SHA: commitId, // コミットID
+    GITHUB_WORKFLOW: workflowName // Workflowの名前
 } = process.env;
 
-const bot=new Bot(tgtoken)
+const bot = new Bot(tgToken)
 
 const evresp = (gevent) => {
     switch (gevent) {
@@ -28,51 +28,55 @@ const evresp = (gevent) => {
             return `
 ❗️❗️❗️❗️❗️❗️
         
-Issue ${prstate}
+Issue ${prState}
 
-Issue Title and Number  : ${ititle} | #${inum}
+Issue Title and Number  : ${issueTitle} | #${issueNum}
 
-Commented or Created By : \`${iactor}\`
+Commented or Created By : \`${issueActor}\`
 
-Issue Body : *${ibody}*
+Issue Body : *${issueBody}*
 
-[Link to Issue](https://github.com/${repo}/issues/${inum})
+[Link to Issue](https://github.com/${repo}/issues/${issueNum})
 [Link to Repo ](https://github.com/${repo}/)
-[Build log here](https://github.com/${repo}/commit/${sha}/checks)`
+[Build log here](https://github.com/${repo}/commit/${commitId}/checks)`
+
+
         case "issue_comment":
             return `
 🗣🗣🗣Issueにコメントが付きました🗣🗣🗣
 
-Issue : ${ititle} | #${inum}
+Issue : ${issueTitle} | #${issueNum}
 
 コメント内容: \`${process.env.INPUT_IU_COM}\`
 
-\`${iactor}\` がコメントしました
-[Issueを開く](https://github.com/${repo}/issues/${inum})
+\`${issueActor}\` がコメントしました
+[Issueを開く](https://github.com/${repo}/issues/${issueNum})
 [Repositoryを開く](https://github.com/${repo}/)
-[Build logを開く](https://github.com/${repo}/commit/${sha}/checks)
+[Build logを開く](https://github.com/${repo}/commit/${commitId}/checks)
             `
         case "pull_request":
             return `
 🔃🔀🔃🔀🔃🔀
-PR ${prstate} 
+PR ${prState} 
         
-PR Number:      ${pnum}
+PR Number:      ${prNum}
         
-PR Title:       ${ptitle}
+PR Title:       ${prTitle}
         
-PR Body:        *${pbody}*
+PR Body:        *${prBody}*
         
-PR By:          ${ghactor}
+PR By:          ${ghActor}
         
-[Link to Issue](https://github.com/${repo}/pull/${pnum})
+[Link to Issue](https://github.com/${repo}/pull/${prNum})
 [Link to Repo ](https://github.com/${repo}/)
-[Build log here](https://github.com/${repo}/commit/${sha}/checks)`
+[Build log here](https://github.com/${repo}/commit/${commitId}/checks)`
+
+
         case "watch":
             return `
 ⭐️⭐️⭐️
 
-By:            *${ghactor}* 
+By:            *${ghActor}* 
         
 \`Repository:  ${repo}\` 
         
@@ -80,15 +84,16 @@ Star Count      ${process.env.INPUT_STARGAZERS}
         
 Fork Count      ${process.env.INPUT_FORKERS}
         
-[Link to Repo ](https://github.com/${repo}/)
-            `
+[Link to Repo ](https://github.com/${repo}/)`
+
+
         case "schedule":
             return `
 ⏱⏰⏱⏰⏱⏰
         
-ID: ${ghwrkflw}
+ID: ${workflowName}
         
-Run *${ipstatus}!*
+Run *${ipStatus}!*
         
 *Action was Run on Schedule*
         
@@ -102,19 +107,19 @@ Run *${ipstatus}!*
             
 ID: ${ghwrkflw}
         
-Action was a *${ipstatus}!*
+Action was a *${ipStatus}!*
         
 \`Repository:  ${repo}\` 
         
-On:          *${ghevent}*
+On:          *${ghEvent}*
         
-By:            *${ghactor}* 
+By:            *${ghActor}* 
         
 Tag:        ${process.env.GITHUB_REF}
         
-[Link to Repo ](https://github.com/${repo}/)
-            `
+[Link to Repo ](https://github.com/${repo}/)`
     }
 }
+
 const output = evresp(ghevent)
-bot.sendMessage(chatid,output,{parse_mode : "Markdown"})
+bot.sendMessage(chatid, output, { parse_mode : "Markdown" })
