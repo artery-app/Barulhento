@@ -16,6 +16,7 @@ const {
     GITHUB_REPOSITORY: repo, // トリガーイベントが作成されたリポジトリ
     GITHUB_ACTOR: ghActor, // 誰がこのアクションをトリガーしたか
     GITHUB_SHA: commitId, // コミットID
+    GITHUB_REF: ref, // ブランチ/タグのRef
     GITHUB_WORKFLOW: workflowName // Workflowの名前
 } = process.env;
 
