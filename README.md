@@ -1,44 +1,151 @@
 # Telewire 🛩 🌉
 
-**_Rather than putting the tag, use the latest commit id to improve security_**  
+# Telewireの使い方ガイド
 
-Telewire connects your GitHub Repo to Telegram about Repo Updates by a Bot you can create. The **execution time for the action is nearly 10s**
+## はじめに
+これは、TelegramとGitHubを連携して、GitHubからActionsを介してTelegramへと通知を送信する機能を使った、バックエンド？サービスです。
 
-Create a chatbot with **botfather** bot in telegram. Get your chat id by speaking to **jsondumpbot** in telegram.
+### 留意事項
 
-Since it is your repo and it should only be limited to you. Thats why you need to give your chat id to the bot. You can either give your **personal chat id** or a **channel chat id** and add the bot to it. 
+1. `index.js`にある`require("dotenv").config`から`const bot=new Bot(tgtoken)`までは、理解できない限りは触らないでください。**正常動作をしなくなる可能性があります。**
+2. 同様に、`actions.yml`にも理解できない限りは触らないようにお願いします。こちらも、**間違った状態にすると、正常動作をしなくなる恐れがあります。**
 
-You can add these details to the Repository Secrets by going to `<repo>/settings/secrets/`
+## ToC
+[Issue/PRの見分け方](#how-to-determine-issue-and-pr)
+[イベントについて](#event)
+[.github/telegram.ymlについて](#telegram-yml)
+[Issue / PRイベント判定後の処理](#event-driven)
+[参考](#references)
 
-## Notifications
-- You can use the simple notifier at the master branch or the release tag like 
-```yml
-    - name: <WorkFlow Name>
-      uses: athul/telewire@master
-      if: always()
-      with:
-        chat: ${{ secrets.chat }}
-        token: ${{ secrets.token }}
-        status: ${{ job.status }}
+<h2 name="how-to-determine-issue-and-pr">Issue/PRの見分け方</h2>
 
+一番最初の、`const evresp = (gevent) =>`は、引数gevent(GitHubのtrigger event)を引数として取っており、その引数の中になにが入っているかで分かります。
+
+JSでは、switch/case文が使えるので、今回はそちらを使った例を表示していきます。
+
+```javascript
+const evresp = () => {
+    switch (gevent) {
+        case 'issues':
+            return `
+                テスト！
+                これはTelewireから送られたIssueの通知です。
+            `
+    }
+}
 ```
-The `chat` is the chat id/channel id and you can get that by talking to the json dump bot. The `token` is the bot's API token and you can create a bot by speaking to Botfather bot in Telegram.    
+このように、`gevent`が`'issues'`である場合に分岐します。returnのあとにある小さい斜めの点は、JSで文字列リテラルと呼ばれる文字を扱うための句です。
+
+<h2 name="event">イベント</h2>
+
+一応[**公式のイベントリスト**](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#webhook-events)を貼っておきますが、ここのすべてを紹介するのは大変なので、主要なものだけを紹介していきます。
+
+また、これらのイベントは、
+
+- `GITHUB_SHA`もとい`githubSHA`に**コミットID**(例: `ffac537e6cbbf934b08745a378932722df287a53`)
+- `GITHUB_REF`もとい`githubRef`に**ブランチやタグのRef**(例: `refs/heads/feature-branch-1`)
+
+を共通の値として受け取っています。
+
+---
+
+### イベントリスト
+
+- [issue_comment](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#issue_comment)
+  このイベントは、Issueにコメントが付いた時に呼び出されます。
+- [issues](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#issues)
+  このイベントは、Issueが作成された時、編集された時、削除されたとき等に呼び出されます。
+- [pull_request](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#pull_request)
+  このイベントは、PRが作成された時、編集された時、削除されたとき等に呼び出されます。
+- [pull_request_review_comment](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#pull_request_review_comment)
+  このイベントは、PRにコメントがついた時に呼び出されます。
+- [push](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#push)
+  このイベントは、ブランチに関わらず、リポジトリにコードがpushされた際に呼び出されます。
 
 
-Hacked from the Core of Statusoli for githubHackathon
+<h2 name="telegram-yml">.github/telegram.ymlについて</h2>
 
-Actions will only trigger on what you want to trigger. You might want to define all the triggers first. You can refer the workflow file of this repo for better guidance. or like this
+基本的に、`telegram.yml`は各リポジトリで設定します。
+例えば、適当なリポジトリ内で、masterブランチのpushイベントを取りたい場合は、
 
 ```yml
-name: Build and Notify
 on:
   push:
-  pull_request:
-    types: [opened,closed]
-  issues:
-    types: [opened, closed, reopened]
-  issue_comment:
-    types: [created]
-  watch:
-    types: [started]
+    branches:
+      - master
 ```
+
+のように記述することができます。
+
+また、
+
+```yml
+on:
+  issues:
+    types: [opened, reopened]
+```
+
+のように、issuesイベントの中でも、作成/再オープンされたときのみ通知するようにすることもできます。
+
+---
+
+他のイベントにも使える値がありますので、そちらは[**イベントタイプリスト**](https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#onevent_nametypes)にてご確認ください。
+
+
+<h2 name="event-driven">Issue / PRイベント判定後の処理</h2>
+
+この章では、イベント判定後について解説していきます。
+例として、今回はissuesイベントを受け取った後を想定して解説します。
+
+ここで前提として、Telegramに
+
+```
+Issueが新しくオープンしました！
+
+Issueタイトル: xxxについて
+Issue内容: xxxをoooして、nnnしたい場合の処理の実装
+
+Issueを開く
+リポジトリを開く
+```
+
+のような通知をしたいと思います。
+この場合には、
+
+```javascript
+case 'issues':
+    return `
+        Issueが新しくオープンしました！
+        
+        Issueタイトル: ${issueTitle}
+        Issue内容: ${issueBody}
+
+        [Issueを開く](https://github.com/${repo}/issues/${issueNum})
+        [リポジトリを開く](https://github.com/${repo}/)
+    `
+```
+
+このようなコードを書くことができます。
+ここで、`index.js`の最初を見てみましょう。
+
+```
+    INPUT_STATUS: ipStatus, 
+    INPUT_TOKEN: tgToken, // Telegram API Token
+    ...
+    GITHUB_WORKFLOW: workflowName // Workflowの名前
+```
+
+のような記述があります。これらは、通知内容を決める際に非常に有用です。
+これらはGitHubから`process.env`を経由して送られ、それをJSで変数として定義し、使えるようにしてくれます。
+
+例えば、上記にあげた例では`issueTitle`を使用していますが、これは`process.env.INPUT_IU_TITLE`を新しい変数に代入した結果、このような短いコードで使えるようになっています。
+
+`index.js`の最初の方に、これらを定義した構文があるので、こちらを参考に通知内容を作ってみてください。また、[**GitHub Actionsでの環境変数**](https://docs.github.com/en/free-pro-team@latest/actions/reference/environment-variables)が公式にまとめられているので、詳しくはこちらをお読みください。
+
+
+<h2 name="references">参考</h2>
+
+- [GitHub Actionsでの環境変数](https://docs.github.com/en/free-pro-team@latest/actions/reference/environment-variables)
+- [Workflow内での、トリガーされるイベントの書き方](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows)
+- [Workflowでの構文の書き方](https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions)
+- [Telewire作成者の記事](https://dev.to/gh-campus-experts/connecting-github-to-telegram-with-github-actions-1pbe)
