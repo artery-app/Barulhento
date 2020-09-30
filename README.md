@@ -42,8 +42,8 @@ const evresp = () => {
 
 また、これらのイベントは、
 
-- `GITHUB_SHA`もとい`githubSHA`に**コミットID**(例: `ffac537e6cbbf934b08745a378932722df287a53`)
-- `GITHUB_REF`もとい`githubRef`に**ブランチやタグのRef**(例: `refs/heads/feature-branch-1`)
+- `GITHUB_SHA`もとい`commitId`に**コミットID**(例: `ffac537e6cbbf934b08745a378932722df287a53`)
+- `GITHUB_REF`もとい`ref`に**ブランチやタグのRef**(例: `refs/heads/feature-branch-1`)
 
 を共通の値として受け取っています。
 
